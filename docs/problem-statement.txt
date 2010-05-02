@@ -1,0 +1,134 @@
+Implement Gibbs Sampling for Bayesian network inference.
+
+The format for the input file and the grading criteria is given below. Your program should accept the name of the input file as a command-line argument. Your implementation may assume that all variables are Boolean. Along with the code, you have to submit a one-page write-up describing experimentation with your implementation. Create a graph to show how your accuracy varies with chain length. Your results should be averaged over at least 5 Bayes nets of 8-10 nodes each and at least 3 queries per Bayes net, with two evidence variables per query. Use a burn-in of 200. You will want to create additional test data (Bayes nets and queries) for your experimentation. If you want to also experiment with larger Bayes nets, longer chain lengths, longer burn-in, or different numbers of evidence variables, that is fine. Submit a well documented code with a readme giving the compilation and execution instructions.
+
+Work in teams of TWO.
+
+Format of the input file:
+
+Below are two networks on which to test your program. These are in the
+same format that we will use for testing. After each network are the
+queries. The first network is followed by 3 queries (2 settings of evidence
+variables, 2 queries for the first setting and 1 for the second setting).
+These are in exactly the form we will use in testing.
+
+// First Test Network
+8 // number of nodes in the network
+{
+// NODE 1: empty line means first node has no parents
+0.05 // prior probability of true is 0.05
+}
+{
+// NODE 2: empty line means second node has no parents
+0.13 // prior probability of true is 0.13
+}
+{
+1 // NODE 3: parent of node 3 is node 1
+0 0.32 // if node 1 is false, probability of true is 0.32
+1 0.81 // if node 1 is true, prob of true is 0.81
+}
+{
+1 2 // NODE 4: parents of node 4 are nodes 1 and 2
+0 0 0.2
+0 1 0.3
+1 0 0.4
+1 1 0.5
+}
+{
+2 // NODE 5: parent of node 5 is node 2
+0 0.9
+1 0.7
+}
+{
+3 4 // NODE 6: parents of node 6 are nodes 3 and 4
+0 0 0.35
+0 1 0.12
+1 0 0.77
+1 1 0.56
+}
+{
+4 5 // NODE 7: parents of node 7 are nodes 4 and 5
+0 0 0.4
+0 1 0.2
+1 0 0.3
+1 1 0.1
+}
+{
+6 7 // NODE 8: parents of node 8 are nodes 6 and 7
+0 0 0.39
+0 1 0.11
+1 0 0.09
+1 1 0.68
+}
+// Here are 3 queries for the preceeding network
+// The first 2 ask about variables 2 and 5, respectively, given that
+// variable 1 is true and variable 8 is false
+// The last query asks about variable 1 given variables 6 and 7 are true
+E 1 t 8 f
+Q 2
+Q 5
+E 6 t 7 t
+Q 1
+
+
+
+// Second Test Network
+8 // number of nodes in the network
+{
+// NODE 1: empty line means first node has no parents
+0.93 // prior probability of true is 0.93
+}
+{
+// NODE 2: empty line means second node has no parents
+0.71 // prior probability of true is 0.71
+}
+{
+// NODE 3: empty line means third node has no parents
+.55 // prior probability of true is 0.55
+}
+{
+2 // NODE 4: parent of node 4 is node 2
+0 0.9
+1 0.7
+}
+{
+2 // NODE 5: parent of node 5 is node 2
+0 0.3
+1 0.5
+}
+{
+1 4 // NODE 6: parents of node 6 are nodes 1 and 4
+0 0 0.2
+0 1 0.3
+1 0 0.4
+1 1 0.5
+}
+{
+3 5 // NODE 7: parents of node 7 are nodes 3 and 5
+0 0 0.4
+0 1 0.7
+1 0 0.8
+1 1 0.5
+}
+{
+2 6 7 // NODE 8: parents of node 8 are nodes 2, 6, and 7
+0 0 0 0.9
+0 0 1 0.1
+0 1 0 0.7
+0 1 1 0.6
+1 0 0 0.2
+1 0 1 0.3
+1 1 0 0.5
+1 1 1 0.8
+}
+
+// Here are the two queries for the preceeding network
+// These queries ask about variables 2 and 3, respectively, given that
+// variable 6 is true and variable 8 is false
+E 6 t 8 f
+Q 2
+Q 3
+
+Grading:
+
+The grading would be done based on successful compilation and execution of the program, correctness on a set of networks and documentation in the code.

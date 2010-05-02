@@ -1,0 +1,15 @@
+
+// = comments
+
+network:
+    int // number of nodes in network
+    nodeblock*  // nodes in network
+
+nodeblock:
+    {
+        int*    // parents
+        table   // probablility tables
+    }
+
+table:
+    (parentValues* float)*   // list of parent values followed by the probablity values
