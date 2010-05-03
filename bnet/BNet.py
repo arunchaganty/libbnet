@@ -5,6 +5,7 @@ BNet:
 
 from exceptions import *
 import operator
+import copy
 import pdb
 
 class BNode:
@@ -54,5 +55,26 @@ class BNet:
 
     def __str__( self ):
         return "[Net %s]"%( str( self.variables ) )
+
+class Context:
+    """Bayesian context"""
+
+    def __init__( self, net, context=None ):
+        if context:
+            assert net == context.net
+            self = copy.copy( context )
+        else:
+            self.net = net
+            self.variables = {}
+            for key in net.variables:
+                self.variables[key] = None
+
+    def setVariable( self, id, value ):
+        if value not in self.net.variables[id].values:
+            raise ValueError
+        self.variables[id] = value
+
+    def unsetVariable( self, id ):
+        self.variables[id] = None
 
 
