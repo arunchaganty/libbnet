@@ -116,6 +116,11 @@ class RaviParser():
         except ValueError:
             raise ParseException( "Expected integer" ) 
 
+    def comment( self ):
+        if self.tokens[ self.idx ].startswith( "//" ):
+            # Skip to the new line
+            while self.tokens[ self.idx ] != "\n": self.idx += 1
+
     def real( self ):
         try:
             r = float( self.tokens[ self.idx ] )
@@ -148,6 +153,7 @@ class RaviParser():
     def tableEntry( self ):
         pVals = self.listOf( self.bools )
         pr = self.real( )
+        self.comment()
         self.newline()
         return ( tuple( pVals ), pr )
 
@@ -157,6 +163,7 @@ class RaviParser():
 
     def node( self, id ):
         self.keyword( '{' )
+        self.comment()
         self.newline()
 
         # Handle no parents
@@ -165,6 +172,7 @@ class RaviParser():
             parents = []
         else:
             parents = self.listOf( self.integer )
+        self.comment()
         self.newline()
         ptable = self.table( )
         self.keyword( '}' )
@@ -172,13 +180,14 @@ class RaviParser():
 
     def network( self ):
         n = self.integer( )
+        self.comment()
         self.newline()
 
         net = BNet()
 
-        pdb.set_trace()
         for i in xrange( n ):
             net.add( self.node( i ) )
+            self.comment()
             self.newline()
 
         return net
