@@ -232,20 +232,33 @@ class BNIFParser( BNetParser ):
         self.debug = False
         pass
 
-    def parse( self, str ):
-        NETWORK = Keyword( "network" )
-        VARIABLE = Keyword( "variable" )
-        PROBABILITY = Keyword( "probability" )
-        PROPERTY = Keyword( "property" )
-        VARIABLETYPE = Keyword( "type" )
-        DISCRETE = Keyword( "discrete" )
-        DEFAULTVALUE = Keyword( "default" )
-        TABLEVALUES = Keyword( "table" )
+    def parse( self, inp ):
+        net = BNet()
+
+
+
+        NETWORK = Keyword( "network" ).suppress()
+        VARIABLE = Keyword( "variable" ).suppress()
+        PROBABILITY = Keyword( "probability" ).suppress()
+        PROPERTY = Keyword( "property" ).suppress()
+        VARIABLETYPE = Keyword( "type" ).suppress()
+        DISCRETE = Keyword( "discrete" ).suppress()
+        DEFAULTVALUE = Keyword( "default" ).suppress()
+        TABLEVALUES = Keyword( "table" ).suppress()
+
+        LBRAC = Literal( '(' ).suppress()
+        RBRAC = Literal( ')' ).suppress()
+        LCURL = Literal( '{' ).suppress()
+        RCURL = Literal( '}' ).suppress()
+        LSQUA = Literal( '[' ).suppress()
+        RSQUA = Literal( ']' ).suppress()
+        SEMI = Literal( ';' ).suppress()
+        ORSEP = Literal( '|' ).suppress()
 
         identifier = Word( alphas, alphanums )
         identifier.setName( 'identifier' )
 
-        property = PROPERTY + OneOrMore( ~( Literal( ';' ) ) ) + ';'
+        property = PROPERTY + OneOrMore( ~( SEMI ) ) + SEMI
         property.setName( 'property' )
 
         number = Word( nums )
@@ -257,38 +270,48 @@ class BNIFParser( BNetParser ):
         real.setParseAction( lambda s,l,t: [ float( t[ 0 ] ) ] )
 
         value = identifier
-        values = delimitedList( value )
+        variable_values = Group( delimitedList( value ) )
         
-        prEntry = '(' + values + ')' + delimitedList( real ) + ';'
+        prEntry = LBRAC + variable_values + RBRAC + Group( delimitedList( real ) ) + SEMI
         prEntry.setName( 'prEntry' )
+        prEntry.setParseAction( lambda s,l,t: [ ( tuple( t[0] ), tuple( t[1] ) ) ] )
 
-        defaultPrEntry = delimitedList( real ) + ';'
+        defaultPrEntry = Group( delimitedList( real ) ) + SEMI
         defaultPrEntry.setName( 'defaultPrEntry' )
+        defaultPrEntry.setParseAction( lambda s,l,t: [ tuple( t[0] ) ] )
 
-        prTable = TABLEVALUES + delimitedList( real ) + ';'
+        prTable = TABLEVALUES + Group( delimitedList( real ) ) + SEMI
         prTable.setName( 'prTable' )
+        prTable.setParseAction( lambda s,l,t: [ tuple( t[0] ) ] )
 
-        variables = '(' + identifier + Optional( '|' + delimitedList( identifier ) ) + ')'
-        variables.setName( 'variables' )
+        condVars = LBRAC + Group( identifier + Optional( ORSEP + delimitedList( identifier ) ) ) + RBRAC
+        condVars.setName( 'condVars' )
 
-        probability = PROBABILITY + variables + '{' + ZeroOrMore( property | defaultPrEntry | prEntry | prTable ) + '}'
+        probability = PROBABILITY + condVars + LCURL + Group( ZeroOrMore( property ) ) + Group( ZeroOrMore( defaultPrEntry | prEntry | prTable ) ) + RCURL
         probability.setName( 'probability' )
+        probability.addParseAction( lambda s,l,t: net.get( t[0][0] ).setTable( t[2] ) )
+        probability.addParseAction( lambda s,l,t: ( net.get( t[ 0 ][0] ).setParents( t[0][1:] ) ) if len( t[0] ) > 1 else False )
 
-        variable_discrete = VARIABLETYPE + DISCRETE + '[' + number + ']' + '{' + values + '}' + ';'
+        variable_discrete = VARIABLETYPE + DISCRETE + LSQUA + number + RSQUA + LCURL + Group( variable_values ) + RCURL + SEMI
         variable_discrete.setName( 'variable_discrete' )
+        variable_discrete.setParseAction( lambda s,l,t : [ t[ 1 ] ] )
 
-        variable = VARIABLE + identifier + '{' + ZeroOrMore( property | variable_discrete ) + '}'
+        variable = VARIABLE + identifier + LCURL + ZeroOrMore( property | variable_discrete ) + RCURL
         variable.setName( 'variable' )
+        variable.addParseAction( lambda s,l,t : net.add( BNode( t[ 0 ], values = map( str, t[1] ) )) ) 
+        variable.addParseAction( lambda s,l,t : [] ) 
 
-        network = NETWORK + identifier + '{' + ZeroOrMore( property ) + '}'
+        network = NETWORK + identifier + LCURL + Group( ZeroOrMore( property ) ) + RCURL
         network.setName( 'name' )
         toplevel = network + ZeroOrMore( variable | probability )
         toplevel.setName( 'toplevel' )
 
         if self.debug:
-            for elem in [ value, values, prEntry, defaultPrEntry, prTable, variables,
+            for elem in [ value, variable_values, prEntry, defaultPrEntry, prTable, condVars,
                     probability, variable_discrete, variable, network, toplevel ]:
                 elem.setDebug()
 
-        return toplevel.parseString( str )
+        toplevel.parseString( inp )
+        
+        return net
 

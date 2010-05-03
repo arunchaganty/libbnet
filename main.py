@@ -19,6 +19,7 @@ def main():
     n = p.parseFile( filename )
 
     print str( n )
+    for elem in n.variables.values(): print str( elem )
 
 
 if __name__ == "__main__": main()
