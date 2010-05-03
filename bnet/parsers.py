@@ -235,8 +235,6 @@ class BNIFParser( BNetParser ):
     def parse( self, inp ):
         net = BNet()
 
-
-
         NETWORK = Keyword( "network" ).suppress()
         VARIABLE = Keyword( "variable" ).suppress()
         PROBABILITY = Keyword( "probability" ).suppress()
