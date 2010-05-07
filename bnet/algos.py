@@ -70,7 +70,17 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
 
         val = select( cdf( Pr ), key = lambda vPr: vPr[1] )
         return val[0]
+    def removeParent( node, ctx_variables ):
+        parents_ = filter( lambda k: k not in ctx_variables.keys(), node.parents )
+        # Join with parents list to get key
+        table_ = {}
+        for key,value in node.table.items() :
+            key_ = zip( node.parents, node.table[key] )
+            key_ = tuple( [ kV[1] for kV in key_ if kV[0] in parents_ ] )
+            table_[key_] = value
 
+        node.parents = parents_
+        node.table = table_
 
     # Create a deep copy of the net to modify
     net = copy.deepcopy( net )
@@ -120,11 +130,13 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
         stats[node.id][ tuple( map( ctx.get, node.parents ) ) ][ val ] += 1
 
     # Compute distribution
-    # Update the original network, and remove any useless nodes
+    # Update the original network, and remove any dependence on our key variable
     for node, stat in stats.items():
         node = net.get( node )
         
         if node.id in ctx_variables.keys():
+            node.parents = []
+            node.table = { (): tuple([ int( value == ctx_variables[ node.id ]) for value in node.values]) }
             continue
 
         for parentValue, stat_ in stat.items():
@@ -132,9 +144,23 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
             if total > 0:
                 for key in stat_.keys():
                     stat_[key] = float(stat_[key])/total
-        parents = dict( zip( map( tuple, stat.keys() ),  [ tuple([ stat_[val] for val in node.values ]) for stat_ in stat.values() ]  ) )
-        node.table = parents
+        node.table = dict( zip( map( tuple, stat.keys() ),  [ tuple([ stat_[val] for val in node.values ]) for stat_ in stat.values() ]  ) )
+        node = removeParent( node, ctx_variables )
 
     return net
+
+def bucketElimination( net, ctx ):
+    """
+    Apply bucket elimination to infer a new Network
+    """
+    
+    # Create a deep copy of the net to modify
+    net = copy.deepcopy( net )
+    ctx = copy.deepcopy( ctx )
+
+    # Create a variable ordering
+    ordering = net.variables.keys()
+
+
 
 
