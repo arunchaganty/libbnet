@@ -82,7 +82,8 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
 
     # List of variables whose value is to be modified
     variables = net.variables.keys()
-    for k,v in ctx.getVariables():
+    ctx_variables = ctx.getVariables()
+    for k,v in ctx_variables.items():
         variables.remove( k )
 
     # Choose a random initial value for all variables 
@@ -97,6 +98,42 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
         val = gibbsChoice( net, ctx, node )
         ctx.setVariable( node.id, val )
 
+    # Initialise the stats table
+    stats = {}
+    for var in net.variables.values():
+        stat = {}
+        for parentValues in var.table.keys():
+            stat_ = {}
+            for value in var.values:
+                stat_[value] = 0
+            stat[parentValues] = stat_
+        stats[var.id] = stat
+
+    # Now for samples duration, compute statistics
+    for i in xrange( samples ):
+        var = random.choice( variables )
+        node = net.get( var )
+        val = gibbsChoice( net, ctx, node )
+        ctx.setVariable( node.id, val )
+
+        # set statistics using the variable and it's parents
+        stats[node.id][ tuple( map( ctx.get, node.parents ) ) ][ val ] += 1
+
+    # Compute distribution
+    # Update the original network, and remove any useless nodes
+    for node, stat in stats.items():
+        node = net.get( node )
+        
+        if node.id in ctx_variables.keys():
+            continue
+
+        for parentValue, stat_ in stat.items():
+            total = sum( stat_.values() )
+            if total > 0:
+                for key in stat_.keys():
+                    stat_[key] = float(stat_[key])/total
+        parents = dict( zip( map( tuple, stat.keys() ),  [ tuple([ stat_[val] for val in node.values ]) for stat_ in stat.values() ]  ) )
+        node.table = parents
 
     return net
 

@@ -85,7 +85,7 @@ class BNet:
 
     def applyContext( self, ctx ):
         """Set the values defined in the context"""
-        for k,v in ctx.getVariables():
+        for k,v in ctx.getVariables().items():
             self.variables[ k ].setValue( v )
 
     def toDot( self ):
@@ -126,7 +126,7 @@ class Context:
         return str( self.variables )
 
     def getVariables( self ):
-        return filter( lambda (k,v): v != None, self.variables.items() )
+        return dict( filter( lambda (k,v): v != None, self.variables.items() ) )
 
     def get( self, id ):
         return self.variables[ id ]
