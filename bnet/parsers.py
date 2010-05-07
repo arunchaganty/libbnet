@@ -6,14 +6,13 @@ bnet.parsers:
 import operator
 from exceptions import *
 from BNet import *
-
 from pyparsing import *
 
 class BNetParser():
     """
     Generic BNetParser
     """
-    def parse():
+    def parse( self, str ):
         """ Parse a file. Should be overwritten """
         raise NotImplementedError 
 
@@ -124,7 +123,7 @@ class RaviParser( BNetParser ):
         pr = self.real( )
         self.comment()
         self.newline()
-        return ( tuple( pVals ), pr )
+        return ( tuple( pVals ), (pr, 1-pr) )
 
     def table( self ):
         ent = self.listOf( self.tableEntry )
@@ -143,9 +142,12 @@ class RaviParser( BNetParser ):
             parents = self.listOf( self.integer )
         self.comment()
         self.newline()
-        ptable = self.table( )
+        ptable = dict( self.table( ) )
         self.keyword( '}' )
-        return BNode( id, parents, ptable )
+
+        values = [True, False]
+
+        return BNode( id, parents, values, ptable )
 
     def network( self ):
         n = self.integer( )
@@ -154,7 +156,7 @@ class RaviParser( BNetParser ):
 
         net = BNet()
 
-        for i in xrange( n ):
+        for i in xrange( 1, n+1 ):
             net.add( self.node( i ) )
             self.comment()
             self.newline()
