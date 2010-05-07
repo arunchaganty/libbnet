@@ -6,13 +6,12 @@ BNet:
 from exceptions import *
 import operator
 import copy
-import pdb
 
 class BNode:
     """Variable in a bayesian network.
     Has an associated list of parents, and a probability table"""
 
-    def __init__( self, id, parents=(), values=(), table=None ):
+    def __init__( self, id, parents=(), attrs = (), values=(), table=None ):
         """
         @id - Node reference id
         @parents - list of parents
@@ -20,6 +19,7 @@ class BNode:
         """
         self.id = id
         self.parents = parents
+        self.attrs = attrs
         self.values = values
         self.table = table
 
@@ -45,6 +45,7 @@ class BNode:
 
     def __repr__( self ):
         return "[Node %s]"%( str( self.id ) )
+
 
 class BNet:
     """Graph on Bayesian variables"""

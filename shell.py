@@ -44,6 +44,13 @@ class NetShell():
                 print str( self.net.variables[ id ] )
             else:
                 print self.net.variables.keys()
+        elif args[0] == "set": 
+            if len( args ) == 2:
+                id = int( args[1] )
+                val = (args[2] == 'True')
+                print str( self.net.variables[ id ] )
+            else:
+                print "Node id and valure required"
         elif args[0] == "push":
             self.context.append( Context( self.net, self.getContext() ) )
         elif args[0] == "pop":

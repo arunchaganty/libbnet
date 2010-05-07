@@ -4,7 +4,8 @@ Algorithms for Bayesian Networks
 
 import copy
 import random
-import pdb
+
+import BNet
 
 def cdf( pdf ):
     """Make a choice from a value set in correspondence with attached probabilities"""
@@ -44,6 +45,42 @@ def roulette(items, num, key=lambda x: x):
 
     selection = [ select( items ) for i in xrange(num)]
     return selection
+
+def cross(*args):
+    ans = [[]]
+    for arg in args:
+        ans = [x+[y] for x in ans for y in arg]
+    return ans
+
+def selectAttr( attrs, values, attr ):
+    return filter( lambda x: x[0] == attr, zip( attrs, values ) )[1]
+
+def selectAttrs( attrs, values, attrList ):
+    return map( lambda x: x[1], filter( lambda x: x[0] in attrList, zip( attrs, values ) ) )
+
+def joinTable( net, *tables ):
+    """
+    Join the n probability tables
+    """
+    parentIds = ( reduce( lambda state, n : state.union(n.parents), tables, set([]) ) )
+    parents = map( net.get, parentIds )
+    attrs = ( reduce( lambda state, n : state + n.attrs, tables, () ) )
+    values = ( reduce( lambda state, n : state.append( n.values ) or state, tables, [] ) )
+
+    pVals = ( reduce( lambda state, p : state.append( p.values ) or state, parents, [] ) )
+    pVals = cross( *pVals )
+
+    table = {}
+    for pVal in pVals:
+        for value in cross( *values ):
+            valueArr = ()
+            p = 1
+            for node in tables:
+                parent_ = selectAttrs( parentIds, pVal, node.parents )
+                value_ = selectAttrs( attrs, value, node.attrs )
+                p *= selectAttr( node.table[ tuple( parent_ ) ], node.values, value_ )
+                valueArr += value_
+            print pVal, valueArr
 
 def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
     """
@@ -149,18 +186,66 @@ def gibbsSample( net, ctx, burnIn=100, samples=1000 ):
 
     return net
 
-def bucketElimination( net, ctx ):
+def exactQuery( net, ctx, query ):
     """
-    Apply bucket elimination to infer a new Network
+    Query the probability distribution of a variable given evidence
     """
     
     # Create a deep copy of the net to modify
     net = copy.deepcopy( net )
     ctx = copy.deepcopy( ctx )
 
+    variables = net.variables
+    ctx_variables = ctx.getVariables()
+
     # Create a variable ordering
     ordering = net.variables.keys()
+    ordering.remove( query )
+
+    max_id = max( ordering )
+
+    # Process functions bucket by bucket
+    for bVar in ordering:
+        # Get all variables which involve var
+        bucket = [ var_ for var_ in variables.values() if bVar in var_.parents ]
+
+        # Create a new node whose value is sum_{ var } ( pi( bucket ) )
+
+        # Get consolidated list of parents
+        parents = set([])
+        attrs = []
+        for var in bucket: 
+            parents = parents.union( set( var.parents ) )
+        parents = map( net.get, list( parents ) )
+        if not parents:
+            continue
+        parents.remove( net.get( bVar ) )
+        print parents
+        print bucket
+        print attrs
 
 
+        # Iterate over all possible values
+        table = {}
+        index  = [ bVar ]
+        index += [ p.id for p in parents]
 
+        for var in cross( *( [ p.values for p in parents ] ) ):
+            P = [ 0 for i in attrs ]
+            for val in net.get( bVar ).values:
+                value = [ val ]
+                value += var
+
+                p = (1,1)
+                attr_ = []
+                for node in bucket:
+                    value_ = tuple( map( lambda x: x[1], filter( lambda x: x[0] in node.parents, zip(index, value) ) ) )
+                    p = ( p[0] * node.table[ value_ ][0], p[1] * node.table[ value_ ][1] )
+                P = (P[0]+p[0], P[1]+p[1])
+            table[ tuple( var ) ] = P
+            print var, (P)
+        max_id += 1
+        variables[ max_id ] = BNet.BNode( max_id, [ p.id for p in parents ], (True,False), table )
+
+    return variables
 

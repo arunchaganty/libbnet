@@ -147,7 +147,7 @@ class RaviParser( BNetParser ):
 
         values = [True, False]
 
-        return BNode( id, parents, values, ptable )
+        return BNode( id, parents, (id,), values, ptable )
 
     def network( self ):
         n = self.integer( )
@@ -282,7 +282,7 @@ class BNIFParser( BNetParser ):
 
         prTable = TABLEVALUES + Group( delimitedList( real ) ) + SEMI
         prTable.setName( 'prTable' )
-        prTable.setParseAction( lambda s,l,t: [ tuple( t[0] ) ] )
+        prTable.setParseAction( lambda s,l,t: [ ((), tuple( t[0] )) ] )
 
         condVars = LBRAC + Group( identifier + Optional( ORSEP + delimitedList( identifier ) ) ) + RBRAC
         condVars.setName( 'condVars' )
@@ -292,7 +292,7 @@ class BNIFParser( BNetParser ):
         probability.addParseAction( lambda s,l,t: net.get( t[0][0] ).setTable( t[2] ) )
         probability.addParseAction( lambda s,l,t: ( net.get( t[ 0 ][0] ).setParents( t[0][1:] ) ) if len( t[0] ) > 1 else False )
 
-        variable_discrete = VARIABLETYPE + DISCRETE + LSQUA + number + RSQUA + LCURL + Group( variable_values ) + RCURL + SEMI
+        variable_discrete = VARIABLETYPE + DISCRETE + LSQUA + number + RSQUA + LCURL + variable_values + RCURL + SEMI
         variable_discrete.setName( 'variable_discrete' )
         variable_discrete.setParseAction( lambda s,l,t : [ t[ 1 ] ] )
 
